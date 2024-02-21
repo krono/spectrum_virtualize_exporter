@@ -1,8 +1,12 @@
 # spectrum_virtualize_exporter
 
-![Go](https://github.com/bluecmd/spectrum_virtualize_exporter/workflows/Go/badge.svg)
-
 Prometheus exporter for IBM Spectrum Virtualize (e.g. Storwize V7000).
+
+# Dashboard
+
+Works with the [Grafana
+Dashboard](https://grafana.com/grafana/dashboards/13753-v7000/) by the
+[original author](https://github.com/bluecmd/spectrum_virtualize_exporter)
 
 # Supported Metrics
 
@@ -62,8 +66,18 @@ and login information in the following format:
 The flag `-extra-ca-cert` is useful as it appears that at least V7000 on the
 8.2 version is unable to attach an intermediate CA.
 
+Prometheus configuration can look like this:
 
-## Missing Metrics?
+```
+  - job_name: 'StorWize'
+    metrics_path: /probe
+    static_configs:
+      - targets: ['localhost:9747']
+    params:
+      target: ['https://my-v7000:7443']
+```
 
-Please [file an issue](https://github.com/bluecmd/spectrum_virtualize_exporter/issues/new) describing what metrics you'd like to see.
-Include as much details as possible please, e.g. how the perfect Prometheus metric would look for your use-case.
+## Repo info
+This is a fork of trappiz `spectrum_virtualize_exporter`, which is a fork of
+bluecmd `spectrum_virtualize_exporter`. Just fixed JSON number handling.
+

@@ -1,4 +1,4 @@
-module github.com/bluecmd/spectrum_virtualize_exporter
+module github.com/krono/spectrum_virtualize_exporter
 
 go 1.16
 

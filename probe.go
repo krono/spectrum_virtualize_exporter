@@ -19,8 +19,10 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
+	"math"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -29,6 +31,10 @@ import (
 	"github.com/alecthomas/units"
 	"github.com/prometheus/client_golang/prometheus"
 )
+
+func maybe(val float64, error error) (float64) {
+	if error != nil {return math.NaN()} else {return  val}
+}
 
 func probeNodeStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 	var (
@@ -141,9 +147,9 @@ func probeNodeStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 			prometheus.GaugeOpts{
 				Name: "spectrum_node_mdisk_write_mb",
 				Help: "Current Megabytes-per-second being written to mdisk",
- 		},
+		},
 		[]string{"id"},
-		)	
+		)
 	)
 
 	registry.MustRegister(mSysCPU)
@@ -164,9 +170,9 @@ func probeNodeStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 	registry.MustRegister(mMDISKWMB)
 
 	type nodeStat struct {
-		NodeID      string `json:"node_id"`
-		StatName    string `json:"stat_name"`
-		StatCurrent int    `json:"stat_current,string"`
+		NodeID      string      `json:"node_id"`
+		StatName    string      `json:"stat_name"`
+		StatCurrent json.Number `json:"stat_current,string"`
 	}
 	var st []nodeStat
 
@@ -177,37 +183,37 @@ func probeNodeStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 
 	for _, s := range st {
 		if s.StatName == "compression_cpu_pc" {
-			mCmpCPU.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) / 100.0)
+			mCmpCPU.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) / 100.0)
 		} else if s.StatName == "cpu_pc" {
-			mSysCPU.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) / 100.0)
+			mSysCPU.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) / 100.0)
 		} else if s.StatName == "fc_mb" {
-			mFcBytes.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) * 1024 * 1024)
+			mFcBytes.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) * 1024 * 1024)
 		} else if s.StatName == "fc_io" {
-			mFcIO.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mFcIO.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "iscsi_mb" {
-			mISCSIBytes.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) * 1024 * 1024)
+			mISCSIBytes.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) * 1024 * 1024)
 		} else if s.StatName == "iscsi_io" {
-			mISCSIIO.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mISCSIIO.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "sas_mb" {
-			mSASBytes.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) * 1024 * 1024)
+			mSASBytes.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) * 1024 * 1024)
 		} else if s.StatName == "sas_io" {
-			mSASIO.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))	
+			mSASIO.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_r_io" {
-			mMDISKRIO.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKRIO.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_w_io" {
-			mMDISKWIO.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKWIO.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_r_ms" {
-			mMDISKRMS.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKRMS.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_w_ms" {
-			mMDISKWMS.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKWMS.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_r_mb" {
-			mMDISKRMB.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKRMB.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "mdisk_w_mb" {
-			mMDISKWMB.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent))
+			mMDISKWMB.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "write_cache_pc" {
-			mCacheWrite.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) / 100.0)
+			mCacheWrite.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) / 100.0)
 		} else if s.StatName == "total_cache_pc" {
-			mCacheTotal.WithLabelValues(s.NodeID).Set(float64(s.StatCurrent) / 100.0)
+			mCacheTotal.WithLabelValues(s.NodeID).Set(maybe(s.StatCurrent.Float64()) / 100.0)
 		}
 	}
 	return true
@@ -237,7 +243,7 @@ func probeEnclosureStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 	type enclosureStats struct {
 		EnclosureID string `json:"enclosure_id"`
 		StatName    string `json:"stat_name"`
-		StatCurrent int    `json:"stat_current,string"`
+		StatCurrent json.Number    `json:"stat_current,string"`
 	}
 	var st []enclosureStats
 
@@ -248,9 +254,9 @@ func probeEnclosureStats(c SpectrumHTTP, registry *prometheus.Registry) bool {
 
 	for _, s := range st {
 		if s.StatName == "power_w" {
-			mPower.WithLabelValues(s.EnclosureID).Set(float64(s.StatCurrent))
+			mPower.WithLabelValues(s.EnclosureID).Set(maybe(s.StatCurrent.Float64()))
 		} else if s.StatName == "temp_c" {
-			mTemp.WithLabelValues(s.EnclosureID).Set(float64(s.StatCurrent))
+			mTemp.WithLabelValues(s.EnclosureID).Set(maybe(s.StatCurrent.Float64()))
 		}
 	}
 	return true
@@ -570,7 +576,6 @@ func probeIPPorts(c SpectrumHTTP, registry *prometheus.Registry) bool {
 		}
 		mSpeed.WithLabelValues(s.NodeID, s.AdapterLocation, s.AdapterPortIID).Set(float64(ps))
 	}
-	return true
 	return true
 }
 
